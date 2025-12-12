@@ -1,1 +1,2 @@
-// place files you want to import through the `$lib` alias in this folder.
+export * from '$lib/ui/static_pages/landing_page/index'
+export * from '$lib/pocketbase/index'
