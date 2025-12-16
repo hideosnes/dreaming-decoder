@@ -3,7 +3,7 @@
     import { pb, fetchEpisodes, getAudioUrl, type Episode } from "$lib/pocketbase/index"
     import { Play, Pause } from '$lib/ui/icons'
 
-    interface AudioProps { episode: Episode }
+    interface AudioProps { episode?: Episode }
     let { episode } = $props()
 
     let audioElement = $state<HTMLAudioElement | null>(null)
@@ -12,11 +12,10 @@
     let currentTime = $state(0)
     let isDragging = $state(false)
 
-    let playButton = $derived(isPlaying ? 'Pause' : 'Play')
-    let duration = $derived(changeTimeFormat(episode.duration))
-    let currenTime = $derived(changeTimeFormat(episode.duration))
-    let progress = $derived(currentTime / (episode.duration || 1) * 100)
-    let audioUrl = $derived(getAudioUrl(episode))
+    let duration = $derived(episode ? changeTimeFormat(episode.duration) : '0:00')
+    let currenTime = $derived(episode ? changeTimeFormat(episode.duration) : '0:00')
+    let progress = $derived(episode ? (currentTime / (episode.duration || 1) * 100) : 0)
+    let audioUrl = $derived(episode ? getAudioUrl(episode) : '')
 
     function intitAudio() {
         if ( !audioElement || audioContext ) return
@@ -69,7 +68,7 @@
     }
 
     function handleProgressClick(event: MouseEvent) {
-        if (!audioElement) return
+        if (!audioElement || !episode) return
         const currentTarget = event.currentTarget as HTMLElement
         if (!currentTarget) return
 
@@ -82,7 +81,7 @@
     }
 
     function handleProgressTouch(event: TouchEvent) {
-        if (!audioElement) return
+        if (!audioElement || !episode) return
         const currentTarget = event.currentTarget as HTMLElement
         if (!currentTarget) return
         
@@ -95,7 +94,7 @@
     }
 
     function handleProgressKeydown(event: KeyboardEvent) {
-        if (!audioElement) return
+        if (!audioElement || !episode) return
 
         const key = event.key
     }
