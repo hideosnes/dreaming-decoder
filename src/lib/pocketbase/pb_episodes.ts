@@ -5,6 +5,7 @@ export type Episode = {
     isPublished: boolean,
     audio_file: string,
     name: string,
+    description: string,
     duration: number,
     category: string,
     speaker: string,
@@ -19,14 +20,16 @@ export async function fetchEpisodes(
         expand?: string
         page?: number
         perPage?: number
-}) {
-    const result = await pb.collection("_EPISODES").getList(
+        $cancelKey?: string
+}): Promise<Episode[]> {
+    const result = await pb.collection<Episode>("_EPISODES").getList(
         options.page ?? 1,
         options.perPage ?? 100,
         {
             filter: options.filter,
             sort: options.sort,
-            expand: options.expand
+            expand: options.expand,
+            $cancelKey: options.$cancelKey
         }
 
     )

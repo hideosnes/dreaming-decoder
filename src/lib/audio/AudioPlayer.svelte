@@ -1,94 +1,124 @@
 <script lang="ts">
-    import { onMount } from 'svelte'
-    import { getAudioUrl, type Episode } from '$lib/pocketbase';
-    import { Play, Pause } from '@lucide/svelte';
-    
-    let isPlaying = $state(false)
-    let currentEpisode: Episode | null = $state(null)
+    import { onMount, onDestroy } from 'svelte'
+    import { audioState, loadEpisodes, setDefaultEpisode, stopPlayback, togglePlayPause, type AudioState } from './audioStore';
+    import { Play, Pause } from '$lib/ui/icons'
+
     let audioElement: HTMLAudioElement | null = null
+    let unsubscribe: (() => void) | null = null
+    let pendingPlayRequest = false
 
-    const audioUrl = $derived(currentEpisode ? getAudioUrl(currentEpisode) : null)
+    // fetch default episode to hydrate AudioPlayer
+    onMount(async () => {
+        try {
+            await loadEpisodes()
+        } catch (err) {
+            console.log('Failed to load episodes:', err)
+        }
+    })
 
+    // finish mounting the AudioPlayer
     onMount(() => {
+
         audioElement = new Audio()
         audioElement.preload = 'auto'
+
+        // listen to state changes
+        unsubscribe = audioState.subscribe((state: AudioState) => {
+            handleAudioStateChange(state)
+        })
         
         audioElement.addEventListener('play', () => {
-            isPlaying = true
+            if (!$audioState.isPlaying) {
+                togglePlayPause()
+            }
         })
 
         audioElement.addEventListener('pause', () => {
-            isPlaying = false
+            if ($audioState.isPlaying) {
+                togglePlayPause()
+            }
         })
 
         audioElement.addEventListener('ended', () => {
-            isPlaying = false
+            stopPlayback()
         })
 
-        // Cleanup
-        return () => {
-            if (audioElement) {
-                audioElement.pause()
-                audioElement.removeAttribute('src')
-                audioElement.load()
-            }
-        }
+        return cleanup
     })
 
-
-    $effect(() => {
-        if (audioElement && audioUrl) {
-            audioElement.src = audioUrl
-        }
+    onDestroy(() => {
+        cleanup()
     })
 
-    function togglePlayPlause() {
-        if (!currentEpisode || !audioElement) return
-
-        if (isPlaying) {
-            audioElement.pause()
-        } else {
-            audioElement.play().catch(err => {
-                console.error('Playback failed:', err)
-            })
-        }
-    }
-
-    function setEpisode(episode: Episode) {
-        currentEpisode = episode
+    function cleanup() {
+        if (unsubscribe) unsubscribe()
         if (audioElement) {
-            audioElement.currentTime = 0
-            audioElement.play().catch(err => {
-                console.error('Playback failed:', err)
-            })
+            audioElement.pause()
+            audioElement.removeAttribute('src')
+            audioElement.load()
         }
     }
 
-    export { setEpisode, togglePlayPlause, isPlaying, currentEpisode }
+    function handleAudioStateChange(state: AudioState) {
+        if (!audioElement) { return }
+        const audio = audioElement
+
+        // Update audio source if episode changed
+        if (state.audioUrl && audioElement.src !== state.audioUrl) {
+            audio.src = state.audioUrl
+            audio.load()
+            pendingPlayRequest = state.isPlaying
+
+            audio.addEventListener('canplay', () => {
+                if (pendingPlayRequest) { audio.play() }
+            }, { once: true })
+            return
+        }
+
+        // Handle play/pause
+        if (state.isPlaying) {
+            if (audio.readyState >= 2) { 
+                audio.play()
+            } else {
+                audioElement.addEventListener('canplay', () => {
+                    audio.play()
+                }, { once: true })
+            }
+        } else {
+            audioElement.pause()
+        }
+    }
 </script>
 
-<div id="audioplayer" class="flex items-center gap-4 p-4 bg-slate-900 text-white">
+<div id="audioplayer" class="flex items-center gap-4 p-4 bg-slate-950 text-emerald-300">
     <div class="flex-1 min-w-0">
-        {#if currentEpisode}
-            <div class="font-semibold truncate">{currentEpisode.name}</div>
-            <div class="text-sm text-slate-400">{currentEpisode.speaker}</div>
+        {#if $audioState.currentEpisode}
+            <div class="font-semibold truncate">{$audioState.currentEpisode.name}</div>
+            <div class="text-sm text-slate-400">{$audioState.currentEpisode.speaker}</div>
         {:else}
-            <div class="text-sm text-slate-400">No episode selected.</div>
+            <div class="">Loading episodes...</div> <!--Instead of text should be default the latest episode --> 
         {/if}
     </div>
     <button 
-        onclick={togglePlayPlause}
+        onclick={togglePlayPause}
+        disabled={!$audioState.currentEpisode}
         class="
-            flex w-12 h-12
-            bg-emerald-500 hover:bg-emerald-600 transition-colors
+            flex w-12 h-12 cursor-pointer
+            border-0 text-emerald-300
+            hover:border-2 hover:border-emerald-300 
+            transition-colors 
             rounded-full items-center justify-center 
         "
-        aria-label={isPlaying ? 'Pause' : 'Play'}
+        aria-label={
+            $audioState.currentEpisode
+                ? ($audioState.isPlaying ? 'Pause' : 'Play')
+                : 'Moopsie, you did not select an episode. <3'
+            }
     >
-        {#if isPlaying}
-            <Play />
+        {#if $audioState.currentEpisode && $audioState.isPlaying}
+            {@html Pause()}
         {:else}
-            <Pause />
+            {@html Play()}
         {/if}
     </button>
 </div>

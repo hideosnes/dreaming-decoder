@@ -1,60 +1,83 @@
 <script lang='ts'>
-    import { onMount } from 'svelte';
+    import { onDestroy, onMount } from 'svelte';
     import { changeTimeFormat } from '$lib/utils';
-	import { fetchEpisodes, type Episode } from '$lib/pocketbase/pb_episodes';
+	import { type Episode } from '$lib/pocketbase/pb_episodes';
+    import { audioState, type AudioState, setEpisode, togglePlayPause } from '$lib/audio/audioStore';
     import { Play, Pause, Download, Bookmark  } from '$lib/ui/icons'
 
-    let episodes = $state<Episode[]>([])
-    let isLoading = $state(true)
-    let error = $state<string|null>(null)
+    let currentAudioState = $state<AudioState | null>(null)
+    let unsubscribe: (() => void) | null = null
 
-    async function loadEpisodes() {
-        try {
-            isLoading = true
-            error = null
+    onMount(() => {
+        unsubscribe = audioState.subscribe((state) => {
+            currentAudioState = state
+        }) 
+    })
 
-            episodes = await fetchEpisodes({
-                filter: 'isPublished = true',
-                sort: '-created'
-            })
-        } catch (err) {
-            error = err instanceof Error ? err.message : 'Error(_unknown): Failed to load episodes'
-        } finally {
-            isLoading = false
+    function handlePlayEpisode(episode: Episode) {
+        if (currentAudioState?.currentEpisode?.id === episode.id ) {
+            togglePlayPause()
+        } else {
+            setEpisode(episode)
         }
     }
 
-    onMount(() => { loadEpisodes() })
-
+    // cleanup subscription
+    onDestroy(() => {
+        if (unsubscribe) unsubscribe()
+    })
 </script>
 
-<div class="w-full h-8/12 bg-linear-to-b from-slate-900 to-slate-950">
-    {#if isLoading}
+<div class="w-full h-full bg-linear-to-b from-slate-900 to-slate-950">
+    {#if $audioState.isLoading}
         <div class="p-4 text-white">Loading episodes...</div>
-    {:else if error}
-        <div class="p-4 text-red-400">Error: {error}</div>
-    {:else if episodes.length === 0}
-        <div class="p-4 text-white">No episodes found...</div>
+    {:else if $audioState.episodes.length === 0}
+        <div class="p-4 text-white">Moops, a wild poops appeared. Reload the page or try again later...</div>
     {:else}
         <div class="flex flex-col gap-4 px-5 py-3 antialiased">
-            {#each episodes as episode (episode.id) }
+            {#each $audioState.episodes as episode (episode.id) }
                 {#if episode.isPublished === true}
-                    <div class="relative w-full h-25 py-2 px-4 bg-linear-to-r from-emerald-400 to-emerald-200 text-indigo-500 rounded-xl rounded-br-4xl">
+                    <div class="relative w-full h-auto py-2 px-4 bg-linear-to-r from-emerald-400 to-emerald-200 text-indigo-500 rounded-xl rounded-br-4xl">
                             <div class="text-[15px] font-black uppercase">
                                 {episode.name}
                             </div>
-                            <div class="text-xs text-indigo-800 ">
-                                {changeTimeFormat(episode.duration, 'seconds')} | {episode.speaker}
+                            <div id="episode-meta" class="text-xs text-indigo-800">
+                                <div class="pb-2">
+                                    {changeTimeFormat(episode.duration, 'seconds')} | {episode.speaker}
+                                </div>
+                                <div class="w-4/5 line-clamp-2">
+                                    {episode.description}
+                                </div>
                             </div>
-                            <button class="
-                                absolute bottom-2 right-2 w-12 h-12 
-                                bg-transparent focus:bg-indigo-500
-                                rounded-full
-                                border-0 hover:border-2 border-indigo-500
-                                text-indigo-400 hover:text-indigo-500 focus:text-indigo-100
-                                flex justify-center items-center
-                            ">
-                                {@html Play()}
+                            <button 
+                                class="
+                                    absolute bottom-2 right-2 w-12 h-12 cursor-pointer
+                                    flex justify-center items-center
+                                    bg-transparent rounded-full 
+                                    transition-color duration-500 hover:bg-indigo-500 hover:text-indigo-100
+                                    "
+                                onclick={() => handlePlayEpisode(episode)}
+
+                                aria-label={
+                                    currentAudioState?.currentEpisode?.id 
+                                    === episode.id && currentAudioState.isPlaying
+                                    ? `Pause ${episode.name}`
+                                    : `Play ${episode.name}`
+                                }
+
+                                aria-pressed={
+                                    currentAudioState?.currentEpisode?.id
+                                    === episode.id && currentAudioState.isPlaying
+                                }
+                            >
+                                {#if 
+                                    currentAudioState?.currentEpisode?.id
+                                    === episode.id && currentAudioState.isPlaying
+                                }
+                                    {@html Pause()}
+                                {:else}
+                                    {@html Play()}
+                                {/if}
                             </button>
                     </div>
                 {/if}
