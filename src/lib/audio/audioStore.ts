@@ -2,6 +2,7 @@ import { writable } from "svelte/store";
 import { getAudioUrl, type Episode, fetchEpisodes } from "$lib/pocketbase";
 
 export interface AudioState {
+    isPublished: boolean
     isPlaying: boolean
     currentEpisode: Episode | null
     audioUrl: string | null
@@ -10,6 +11,7 @@ export interface AudioState {
 }
 
 export const audioState = writable<AudioState>({
+    isPublished: false,
     isPlaying: false,
     currentEpisode: null,
     audioUrl: null,

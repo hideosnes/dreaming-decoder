@@ -1,6 +1,6 @@
 <script lang='ts'>
     import { onDestroy, onMount } from 'svelte';
-    import { changeTimeFormat } from '$lib/utils';
+    import { changeTimeFormat, changeDateFormat } from '$lib/utils';
 	import { type Episode } from '$lib/pocketbase/pb_episodes';
     import { audioState, type AudioState, setEpisode, togglePlayPause } from '$lib/audio/audioStore';
     import { Play, Pause, Download, Bookmark  } from '$lib/ui/icons'
@@ -32,20 +32,29 @@
     {#if $audioState.isLoading}
         <div class="p-4 text-white">Loading episodes...</div>
     {:else if $audioState.episodes.length === 0}
-        <div class="p-4 text-white">Moops, a wild poops appeared. Reload the page or try again later...</div>
+        <div class="p-4 text-slate-700">Coming soon...</div>
     {:else}
-        <div class="flex flex-col gap-4 px-5 py-3 antialiased">
+        <div class="flex flex-col gap-4 px-4 py-3 antialiased">
             {#each $audioState.episodes as episode (episode.id) }
                 {#if episode.isPublished === true}
-                    <div class="relative w-full h-auto py-2 px-4 bg-linear-to-r from-emerald-400 to-emerald-200 text-indigo-500 rounded-xl rounded-br-4xl">
-                            <div class="text-[15px] font-black uppercase">
+                    <div class="relative w-full h-auto p-4 bg-linear-to-r from-emerald-400 to-emerald-200 text-indigo-800 rounded-xl rounded-br-4xl">
+                            <div class="text-lg font-bold uppercase">
                                 {episode.name}
                             </div>
-                            <div id="episode-meta" class="text-xs text-indigo-800">
+                            <div id="episode-meta" class="text-sm">
                                 <div class="pb-2">
-                                    {changeTimeFormat(episode.duration, 'seconds')} | {episode.speaker}
+                                    {changeTimeFormat(episode.duration, 'seconds')}
+                                    <span class="px-1.5">|</span>
+                                        {episode.speaker}
+                                    <span class="px-1.5">|</span>
+                                        {changeDateFormat(episode.created)}
+                                    <div>
+                                        {#each episode.category as category} 
+                                            <span class="pr-1 italic">{category},</span>
+                                        {/each}
+                                    </div>
                                 </div>
-                                <div class="w-4/5 line-clamp-2">
+                                <div class="w-5/6 truncate">
                                     {episode.description}
                                 </div>
                             </div>

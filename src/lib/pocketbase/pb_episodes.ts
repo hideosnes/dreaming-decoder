@@ -1,5 +1,15 @@
 import pb from "./pocketbaseClient"
 
+export type Categories =
+    | 'Decision Making'
+    | 'Deep Dive'
+    | 'Everyday AI'
+    | 'Meet the Makers'
+    | 'App Update'
+    | 'Ethics'
+    | 'Reflection'
+    | 'Framework';
+
 export type Episode = {
     id: string,
     isPublished: boolean,
@@ -7,7 +17,7 @@ export type Episode = {
     name: string,
     description: string,
     duration: number,
-    category: string,
+    category: Categories[],
     speaker: string,
     created: string,
     updated: string

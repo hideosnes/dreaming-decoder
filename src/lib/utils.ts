@@ -35,3 +35,21 @@ string {
     
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
 }
+
+export function changeDateFormat(dateToConvert: string): string {
+    if (!dateToConvert) return ''
+
+    const date = new Date(dateToConvert)
+    if (date.toString() === 'Invalid Date') return ''
+
+    const day = String(date.getUTCDate()).padStart(2, '0')
+    const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ]
+
+    const month = months[date.getUTCMonth()]
+    const year = date.getUTCFullYear()
+
+    return `${day}. ${month} ${year}`
+}
