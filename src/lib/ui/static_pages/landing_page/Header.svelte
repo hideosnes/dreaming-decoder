@@ -40,7 +40,7 @@
     class="w-full h-auto text-left transition-all duration-300 ease-in-out bg-slate-900"
     aria-expanded={expanded}
 >
-    <div class="w-full px-4 py-4">
+    <div class="w-full px-4 py-4 md:px-[15%] xl:px-[30%]">
         {#if isLoading}
             <small id="loadingMetadata" class="text-slate-500 italic">Loading...</small>
         {:else if metadata}

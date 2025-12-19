@@ -28,7 +28,7 @@
     })
 </script>
 
-<div class="w-full h-full bg-linear-to-b from-slate-900 to-slate-950">
+<main id="responsive" class="h-full bg-linear-to-b from-slate-900 to-slate-950 px-0 md:px-[15%] xl:px-[30%]">
     {#if $audioState.isLoading}
         <div class="p-4 text-white">Loading episodes...</div>
     {:else if $audioState.episodes.length === 0}
@@ -93,4 +93,4 @@
             {/each}
         </div>
     {/if}
-</div>
+    </main>

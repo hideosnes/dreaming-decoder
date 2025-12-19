@@ -12,6 +12,8 @@ Self-host your Podcast. Made with Svelte and Pocketbase
 * shownotes and improve description
 * categories and sorting by category
 * counter for amount of plays
+* proper backend, auto-publish
+* RSS, and cast-sig
 
 ## Building
 ```sh
