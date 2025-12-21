@@ -4,114 +4,173 @@
     import { 
         fetchMetadata, 
         getLocalMetadata, 
-        getLinks, 
+        getLinks,
         getLogoUrl, 
-        type Metadata, 
-        type Link 
+        type Metadata,
+        type Links
     } from "$lib/pocketbase/pb_metadata";
+	import { slide } from "svelte/transition";
+    import { Motion } from 'svelte-motion'
 
     let metadata: Metadata | null = $state(null)
     let logoUrl: string = $state('')
-    let links: Link[] = $state([])
+    let links: Links[] = $state([])
     let isLoading = $state(false)
+    let expandAbout = $state(false)
+    
+    let rotation = $derived(expandAbout ? 45 : 0)
 
     onMount(async () => {
         await fetchMetadata()
         metadata = getLocalMetadata()
-        links = getLinks()
-        if (metadata) { logoUrl = getLogoUrl(metadata) }
+        if (metadata) { 
+            logoUrl = getLogoUrl(metadata)
+            links = getLinks()
+        }
+        
         isLoading = false
     })
 
-    let expanded = $state(false)
-    let responsiveExpansion = $derived(expanded 
-        ? 'w-auto overflow-hidden'
-        : 'w-0 h-0 overflow'
-    )
+    // closes the menu if user clicks anywhere else
+    function handleClickOutside(node: HTMLElement) {
+        function handleEvent(event: Event) {
+            if (node && !node.contains(event.target as Node) && expandAbout) {
+                expandAbout = false
+            }
+        }
 
-    let expandAbout = $derived(expanded
-        ? 'max-h-[500px] mt-[1rem] opacity-100'
-        : 'max-h-0 mt-0 opacity-0'
-    )
+        document.addEventListener('click', handleEvent, true)
+        document.addEventListener('touchstart', handleEvent, true)
+
+        return {
+            destroy() {
+                document.removeEventListener('click', handleEvent, true)
+                document.removeEventListener('touchstart', handleEvent, true)
+            }
+        }
+    }
+    
+    function handleHeaderClick(e: Event) {
+        const target = e.target as HTMLElement;
+        if (target.closest('.menu-item')) { 
+            e.preventDefault(); 
+        }
+        expandAbout = !expandAbout;
+    }
+    
+    function handleHeaderKeydown(e: KeyboardEvent) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            expandAbout = !expandAbout;
+        }
+    }
 </script>
 
-<button
-    onclick={() => expanded = !expanded}
-    class="w-full h-auto text-left transition-all duration-300 ease-in-out bg-slate-900"
-    aria-expanded={expanded}
+<header 
+    use:handleClickOutside
+    class="bg-slate-900 w-full p-0 md:px-[15%] xl:px-[30%]"
 >
-    <div class="w-full px-4 py-4 md:px-[15%] xl:px-[30%]">
+    <div 
+        class="p-4 list-none overflow-hidden"
+        
+    >
         {#if isLoading}
             <small id="loadingMetadata" class="text-slate-500 italic">Loading...</small>
         {:else if metadata}
-            <div class="flex items-start">
-                <!-- Profile Image (only shown when expanded) -->
-                <div class="">
-                    <div class="shrink-0 {responsiveExpansion} overflow-hidden">
-                        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-lg rounded-tl-3xl overflow-hidden shadow-md">
-                            <img 
-                                src={logoUrl}
-                                alt="Profile"
-                                class="w-full h-full object-cover"
-                            />
-                        </div>
+                <div id="image" class="flex items-center h-16">
+                    <div class="w-16 rounded-xl mr-4">
+                        <img
+                            src={logoUrl}
+                            alt="Profileimage"
+                            class="w-16 h-16 object-cover mr-4"
+                        />
                     </div>
-                </div>
-                
-                <!-- Content Area -->
-                <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between gap-2">
-                        <!-- Title and Subtitle -->
-                        <div class="min-w-0 flex-1 {expanded ? 'ml-4' : 'ml-0'}">
-                            <h1 class="text-xl sm:text-2xl font-bold text-emerald-300 truncate">
-                                {metadata.blogName}
-                            </h1>
-                            <p class="text-xl font-light text-slate-400 truncate">
-                                {metadata.subtitle}
-                            </p>
-                        </div>
 
-                        <!-- Expand/Collapse Indicator -->
-                        <div class="shrink-0 ml-4">
-                            <div class="w-10 h-10 rounded-full border-2 border-emerald-300 flex items-center justify-center transition-transform duration-300 ease-in-out"
-                                class:rotate-45={expanded}>
+                    <div id="title" class="flex-1">
+                        <h1 class="text-xl sm:text-2xl font-bold text-emerald-300 truncate">
+                            {metadata.blogName}
+                        </h1>
+                        <p class="text-xl font-light text-slate-400 truncate">
+                            {metadata.subtitle}
+                        </p>
+                    </div>
+                    
+                    <div id="toggle" 
+                        role="button"
+                        tabindex="0"
+                        aria-label="Toggle submenu with links and the about section"
+                        class="ml-auto cursor-pointer"
+                        onclick={handleHeaderClick}
+                        onkeydown={handleHeaderKeydown}
+                    >
+                        <Motion animate={{ rotate: rotation }} transition={{ duration: .5 }} let:motion>
+                            <div use:motion class="w-10 h-10 rounded-full border-2 border-emerald-300 flex items-center justify-center">
                                 <svg class="w-10 h-10 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 1v48 M1 12h22"></path>
                                 </svg>
                             </div>
-                        </div>
+                        </Motion>
                     </div>
                 </div>
-            </div>
-
-            <!-- About Section (expands/collapses) -->
-            <div class="overflow-hidden text-slate-400  transition-all duration-300 ease-in-out {expandAbout}">
-                <p class="leading-relaxed">
-                    {metadata.about}
-                </p>
-                <!-- Link Menu Bar -->
-                <div class="py-3 flex items-center justify-between font-bold">
-                    <!-- Left -->
-                    <div id="menu left">
-                        {#each links as link}
-                            <a 
-                                class="pr-4 hover:text-emerald-300" 
-                                href={link.link} 
-                                rel={link.relation} 
-                                target={link.target}
-                            >
-                                {link.description}
-                            </a>
-                        {/each}
-                    </div>
-                    <!-- Right -->
-                    <div id="menu right" class="shrink-0 text-slate-700 hover:text-emerald-300">
-                        <a href="#">Impressum</a>
-                    </div>
-                </div>
-            </div>
         {:else}
             <small>Something went wrong... Try again later!</small>
         {/if}
     </div>
-</button>
+    
+    {#if expandAbout}
+        <div id="menu" 
+            in:slide={{ axis: 'y', duration: 500 }} 
+            out:slide={{ axis: 'y', duration: 500, delay: 500 }} 
+            class="h-auto flex items-center py-2">
+            <div class="px-4 justify-between font-normal text-slate-400 flex-1">
+                {#each links as l}
+                    <a 
+                        class="pr-2 hover:text-emerald-300 transition-colors duration-300 ease-in-out"
+                        href="{l.link}"
+                        rel="{l.relation}"
+                        target="{l.target}"
+                    >
+                        {l.description}
+                    </a>
+                {/each}
+            </div>
+            <div id="menu right" class="shrink-0 text-xs px-4">
+                <a 
+                    class="cursor-pointer text-slate-600 focus:outline-none hover:text-emerald-300 transition-colors duration-300 ease-in-out" 
+                    href="#"
+                >
+                    Impressum
+                </a>
+            </div> 
+        </div>
+        <div id="about" 
+                in:slide={{ axis: 'y', duration: 500, delay: 500 }}
+                out:slide={{ axis: 'y', duration: 500 }} 
+                class="p-5 overflow-x-auto">
+            <h2 class="text-emerald-300 text-lg font-semibold pb-4">About</h2>
+            <p class="leading-relaxed text-slate-400 h-auto">{metadata?.about}</p>
+        </div>
+    {/if}
+</header>
+
+<style>
+    /* Smooth scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+        transition: background 0.3s ease;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+    }
+</style>

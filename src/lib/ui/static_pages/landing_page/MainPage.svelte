@@ -28,7 +28,7 @@
     })
 </script>
 
-<main id="responsive" class="h-full bg-linear-to-b from-slate-900 to-slate-950 px-0 md:px-[15%] xl:px-[30%]">
+<main id="responsive" class="h-screen bg-linear-to-b from-slate-900 to-slate-950 px-0 md:px-[15%] xl:px-[30%]">
     {#if $audioState.isLoading}
         <div class="p-4 text-white">Loading episodes...</div>
     {:else if $audioState.episodes.length === 0}

@@ -135,7 +135,7 @@
     }
 </script>
 
-<div id="audioplayer" class="flex flex-col gap-2 p-4 bg-slate-950 text-emerald-300">
+<div id="audioplayer" class="flex flex-col gap-2 p-4 text-emerald-300">
   <div class="flex items-center justify-between gap-4 px-4">
     <!-- Left: Timeline Stack -->
     <div class="flex-1 flex flex-col gap-2">

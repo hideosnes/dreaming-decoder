@@ -1,7 +1,18 @@
 import pb from "./pocketbaseClient"
 import type { Episode } from './pb_episodes'
 
-export type Link = {
+export type Impressum = {
+    name: string,
+    street: string,
+    postal_code: string,
+    city: string,
+    country: string,
+    VAT: string,
+    mail_prefix: string,
+    mail_suffix: string
+}
+
+export type Links = {
     link: string,
     description: string,
     relation: string,
@@ -15,8 +26,8 @@ export type Metadata = {
     subtitle: string,
     about: string,
     creator: string,
-    impressum: JSON, // todo!
-    links: Record<string, Link>,
+    impressum: Impressum,
+    links: Record<string, Links>,
     relation_: string | Episode,
     imgLogo: string,
     created: string,
@@ -48,16 +59,31 @@ export function getLogoUrl(metadata: Metadata): string {
 
 // --- LINKS --- //
 // get all links as an array
-export function getLinks(): Link[] {
+export function getLinks(): Links[] {
     const links = localMetadata?.links
+
     if (!links) return []
 
-    return Object.values(links) // convert object to an array of links
+    return Object.values(links) // convert object to an array
 }
-// get the number of links
+
+// --- IMPRESSUM --- //
+export function getImpressum(): Impressum[] {
+    const impressum = localMetadata?.impressum
+    
+    if (!impressum) return []
+
+    if (typeof impressum === 'object' && !Array.isArray(impressum) && impressum !== null) {
+        return [impressum as Impressum]
+    }
+    
+    return []
+}
+
+/* // get the number of links
 export function getLinksCount(): number {
     const links = localMetadata?.links
     if(!links) return 0
 
     return Object.keys(links).length
-}
+} */
