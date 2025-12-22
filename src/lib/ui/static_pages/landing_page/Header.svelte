@@ -51,7 +51,7 @@
     }
     
     function handleHeaderClick(e: Event) {
-        const target = e.target as HTMLElement;
+        const target = e.target as HTMLElement; // includes spatial touch events
         if (target.closest('.menu-item')) { 
             e.preventDefault(); 
         }
