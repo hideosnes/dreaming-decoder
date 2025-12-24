@@ -2,10 +2,7 @@
 	"name": "dreaming-decoder",
 	"private": true,
 	"version": "0.0.3",
-	"type": "module",
-	"engines": {
-		"node": ">=22.12"
-	},
+	"type": "module"
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
