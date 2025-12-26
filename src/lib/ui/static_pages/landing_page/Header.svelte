@@ -113,7 +113,7 @@
                     </div>
                 </div>
         {:else}
-            <small>Something went wrong... Try again later!</small>
+            <small class="text-white-500">Currently unavailable... Try again later!</small>
         {/if}
     </div>
     
